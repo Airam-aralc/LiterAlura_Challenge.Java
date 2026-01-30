@@ -3,6 +3,7 @@ package com.alura.literalura;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import view.Menu;
 
 @SpringBootApplication
 public class LiteraluraApplication implements CommandLineRunner {
@@ -13,6 +14,6 @@ public class LiteraluraApplication implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        System.out.println("Hello Word!");
+        Menu menu = new Menu();
     }
 }
