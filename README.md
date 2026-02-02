@@ -41,5 +41,5 @@ Apresentação do código: https://www.dropbox.com/scl/fi/uo8ra0zy6xz6ulfpeargq/
 
 **⭐⭐BADGE ORACLE⭐⭐**
 <p align="center">
-  <img width="500" height="500" alt="Badge-Conversor" src="https://github.com/user-attachments/assets/02b1010a-6715-4b10-bbc7-fbc4b340f233" />
+  <img width="410" height="410" alt="image" src="https://github.com/user-attachments/assets/69ca793e-b215-405d-9ac1-edfa1a1d6c92" />
 </p>
