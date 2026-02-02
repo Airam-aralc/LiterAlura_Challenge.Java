@@ -9,7 +9,9 @@ public class Livro {
     @GeneratedValue(strategy = GenerationType.IDENTITY) //o banco de dados irá gerar um valor único para o ID
     private Long id;
     private String titulo;
-    private String autor;
+    @ManyToOne
+    @JoinColumn(name = "autor_id")
+    private Autor autor;
     private String idioma;
     private double downloads;
 
@@ -27,10 +29,10 @@ public class Livro {
         this.titulo = titulo;
     }
 
-    public String getAutor() {
+    public Autor getAutor() {
         return autor;
     }
-    public void setAutor(String autor) {
+    public void setAutor(Autor autor) {
         this.autor = autor;
     }
 
@@ -50,6 +52,8 @@ public class Livro {
 
     @Override //to string
     public String toString(){
+        String nomeAutor = (this.autor != null) ? this.autor.getNome() : "Desconhecido";
+
         return String. format("""
                ------------------- LIVRO ---------------------
                Titulo:   %s
@@ -57,7 +61,7 @@ public class Livro {
                Idioma:   %s
                Downloads %.2f
                """,
-                this.titulo, this.autor, this.idioma, this.downloads
+                this.titulo, nomeAutor, this.idioma, this.downloads
         );
     }
 }

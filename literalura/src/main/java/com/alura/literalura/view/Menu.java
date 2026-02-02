@@ -1,11 +1,18 @@
 package com.alura.literalura.view;
 
+import com.alura.literalura.modelo.AutorData;
 import com.alura.literalura.modelo.BookData;
 import com.alura.literalura.modelo.Results;
+import com.alura.literalura.repository.AutorRepository;
+import com.alura.literalura.repository.LivroRepository;
 import com.alura.literalura.service.APIConsumer;
+import com.alura.literalura.service.Autor;
 import com.alura.literalura.service.DataConverter;
 import com.alura.literalura.service.Livro;
+import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 public class Menu {
@@ -15,6 +22,20 @@ public class Menu {
     private DataConverter converter = new DataConverter();
     private Scanner scanner = new Scanner(System.in);
     private String json;
+
+    private List<BookData> dadosLivro = new ArrayList<>();
+
+//
+    private List<AutorData> dadosAutor = new ArrayList<>();
+//
+
+    private LivroRepository repository;
+    private AutorRepository autorRepository;
+
+    public Menu(LivroRepository repository, AutorRepository autorRepository) {
+        this.repository = repository;
+        this.autorRepository = autorRepository;
+    }
 
     public void exibeMenu(){
         var opcao = -1;
@@ -62,60 +83,135 @@ public class Menu {
         }
     }
 
+//    private Livro livro(String titulo) {
+//        Results data = converter.getData(json, Results.class);
+//
+//        BookData bookData = data.bookDataList().stream()
+//                .filter(l -> l.titulo().toUpperCase().contains(titulo.toUpperCase()))
+//                .findFirst()
+//                .orElse(null);
+//
+//        if (bookData != null) {
+//            Livro livro = new Livro();
+//            livro.setTitulo(bookData.titulo());
+//            livro.setDownloads(bookData.downloadCount());
+//
+//            if (!bookData.linguagem().isEmpty()) {
+//                livro.setIdioma(bookData.linguagem().get(0));
+//            }
+//
+//            if (!bookData.autor().isEmpty()) {
+//                AutorData ad = bookData.autor().get(0);
+//                // Busca o autor no banco para associar ao livro
+//                Autor autor = autorRepository.findByNome(ad.name())
+//                        .orElseGet(() -> autorRepository.save(new Autor(ad)));
+//                livro.setAutor(autor); // Agora passa o OBJETO autor
+//            }
+//
+//            return livro;
+//        }
+//        return null;
+//    }
+
     private void exibeLivroPorTitulo() {
         System.out.println("Digite o título:");
         String titulo = scanner.nextLine();
-        json = consumer.getData(URL_BASE + "?search=" +titulo.replace(" ", "+"));
+        json = consumer.getData(URL_BASE + "?search=" + titulo.replace(" ", "+"));
 
-        Livro livroEncontrado = livro(titulo);
-        System.out.println(livroEncontrado);
-    }
-
-    private Livro livro(String titulo) {
         Results data = converter.getData(json, Results.class);
+        BookData bookData = data.bookDataList().stream()
+                .filter(l -> l.titulo().toUpperCase().contains(titulo.toUpperCase()))
+                .findFirst()
+                .orElse(null);
 
-        BookData bookData = data.bookDataList().stream() //vai pegar a lista de informações de livro, depois transformar em uma stream
-                .filter(l -> l.titulo().toUpperCase().contains(titulo.toUpperCase())) //filtra: para cada livro irá pegar o título, colocar em maiúsculo, verifica se ele contém o título em maiúsculo
-                .findFirst() //só pegará o primeiro
-                .orElse(null); //se não tiver, retorna null
-
-        //Se encontrou, converte para a classe Livro
         if (bookData != null) {
-            Livro livro = new Livro();
-            livro.setTitulo(bookData.titulo());
-            livro.setDownloads(bookData.downloadCount());
+            Livro livroEncontrado = new Livro();
+            livroEncontrado.setTitulo(bookData.titulo());
+            livroEncontrado.setDownloads(bookData.downloadCount());
+            livroEncontrado.setIdioma(bookData.linguagem().isEmpty() ? "en" : bookData.linguagem().get(0));
 
-            // Tratando as listas para campos simples
             if (!bookData.autor().isEmpty()) {
-                livro.setAutor(bookData.autor().get(0).name());
-            }
-            if (!bookData.linguagem().isEmpty()) {
-                livro.setIdioma(bookData.linguagem().get(0));
+                AutorData ad = bookData.autor().get(0);
+
+                // 1. Tenta buscar o autor no banco ou cria um novo
+                Autor autorParaSalvar = autorRepository.findByNome(ad.name())
+                        .orElseGet(() -> {
+                            Autor novo = new Autor(ad);
+                            return autorRepository.save(novo);
+                        });
+
+                // 2. AGORA SIM: Atribui o OBJETO Autor ao Livro
+                livroEncontrado.setAutor(autorParaSalvar);
             }
 
-            return livro;
+            repository.save(livroEncontrado);
+            System.out.println(livroEncontrado);
+            System.out.println("Livro salvo no banco de dados");
+        } else {
+            System.out.println("Livro não encontrado");
         }
-        return null;
     }
 
-        //OLHE PARA CÁ E VEJA SE NÃO TEM NENHUM ERRO
-//    private BookData getBookData(String titulo) {
-//        Results data = converter.getData(json, Results.class);
-//        BookData bookData = data.bookDataList().stream() //vai pegar a lista de informações de livro, depois transformar em uma stream
-//                .filter(livro -> livro.titulo().toUpperCase().contains(titulo.toUpperCase())) //filtra: para cada livro irá pegar o título, colocar em maiúsculo, verifica se ele contém o título em maiúsculo
-//                .findFirst().orElse(null); //só pegará o primeiro, se não tiver, retorna null
-//        return bookData;
-//    }
+    private void exibeLivrosRegistrados () {
+        List<Livro> livros = repository.findAll();
 
-        private void exibeLivrosRegistrados () {
+        if (livros.isEmpty()){
+            System.out.println("Nenhum livro cadastrado");
+        } else {
+            System.out.println("-------LIVROS CADASTRADOS NO BANCO--------");
+            livros.forEach(System.out::println);
+        }
+    }
+
+    private void exibeAutoresRegistrados () {
+        List<Autor> autores = autorRepository.findAll();
+
+        if (autores.isEmpty()) {
+            System.out.println("Nenhum autor registrado.");
+        } else {
+            System.out.println("\n------- AUTORES REGISTRADOS (DETALHES) --------");
+            autores.forEach(System.out::println);
+        }
+    }
+
+    private void exibeAutoresVivosPorAno () {
+        System.out.println("Digite o ano que deseja pesquisar:");
+        try {
+            var ano = scanner.nextInt();
+            scanner.nextLine();
+
+            List<Autor> autoresVivos = autorRepository.buscarAutoresVivosNoAno(ano);
+
+            if (autoresVivos.isEmpty()) {
+                System.out.println("Nenhum autor encontrado vivo no ano de " + ano);
+            } else {
+                System.out.println("\n------- AUTORES VIVOS EM " + ano + " -------");
+                autoresVivos.forEach(System.out::println);
+            }
+        } catch (Exception e) {
+            System.out.println("Por favor, digite um ano válido (número).");
+            scanner.nextLine();
+        }
+    }
+
+    private void exibeLivrosPorIdioma () {
+        System.out.println("""
+            Digite o idioma para busca:
+            es - Espanhol
+            en - Inglês
+            fr - Francês
+            pt - Português
+            """);
+        var idioma = scanner.nextLine().toLowerCase();
+        List<Livro> livros = repository.findByIdioma(idioma);
+
+        if (livros.isEmpty()) {
+            System.out.println("Nenhum livro cadastrado nesse idioma.");
+        } else {
+            livros.forEach(System.out::println);
         }
 
-        private void exibeAutoresRegistrados () {
-        }
-
-        private void exibeAutoresVivosPorAno () {
-        }
-
-        private void exibeLivrosPorIdioma () {
-        }
+        System.out.println("Foram encontrados " + livros.size() + " livros em " + idioma.toUpperCase());
+    }
 }
+
